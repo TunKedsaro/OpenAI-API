@@ -35,5 +35,31 @@ async def health_check():
 
 @app.post("/openai/gramma", response_model=GrammarTaskResponse)
 async def openai_grammar(request:GrammarTaskRequest)->GrammarTaskResponse:
-    result_text = f"Processed text: {request.text}"
-    return GrammarTaskResponse(text=result_text)
+    style_prompts = {
+        "informal":"Using informal words like talking to a friend",
+        "ielts":"Using very fancy words",
+        "formal":"Using formal words",
+        "academic":"Using academic words suitable for academic publications.",
+        "default":""
+    }
+    # result_text = f"Processed text: {request.text}"
+    # return GrammarTaskResponse(text=result_text)
+    response = openai.ChatCompletion.create(
+        model = "gpt-3.5-turbo-16k",
+        messages = [
+            {
+                "role": "system",
+                "content": "You will be provided with statements, and your task is to convert them to standard English. " + style_prompts[request.style]
+            },
+            {
+                "role": "user",
+                "content": request.text
+            }
+        ],
+        temperature=0,
+        max_tokens=2048,
+        top_p=1,
+        frequency_penalty=0,
+        presence_penalty=0
+    )
+    return GrammarTaskResponse(text=response.choices[0].message['content'])
